@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import mediapipe as mp
 
 
 WHITE_COLOR = (245, 242, 226)
@@ -29,9 +28,6 @@ class WebcamManager(object):
         # Resize frame
         frame = cv2.resize(frame, (WIDTH, HEIGHT), interpolation=cv2.INTER_AREA)
 
-        # Flip the image vertically for mirror effect
-        frame = cv2.flip(frame, 1)
-
         # Write result if there is
         frame = self.draw_text(frame)
 
@@ -51,7 +47,7 @@ class WebcamManager(object):
         font_size=1,
         font_thickness=2,
         offset=int(HEIGHT * 0.02),
-        bg_color=(245, 242, 176, 0.85),
+        bg_color=(245, 242, 176),
     ):
         window_w = int(HEIGHT * len(frame[0]) / len(frame))
 
@@ -75,30 +71,23 @@ class WebcamManager(object):
 
     @staticmethod
     def draw_landmarks(image, results):
-        mp_holistic = mp.solutions.holistic  # Holistic model
-        mp_drawing = mp.solutions.drawing_utils  # Drawing utilities
-
-        # Draw left hand connections
-        mp_drawing.draw_landmarks(
-            image,
-            landmark_list=results.left_hand_landmarks,
-            connections=mp_holistic.HAND_CONNECTIONS,
-            landmark_drawing_spec=mp_drawing.DrawingSpec(
-                color=(232, 254, 255), thickness=1, circle_radius=1
-            ),
-            connection_drawing_spec=mp_drawing.DrawingSpec(
-                color=(255, 249, 161), thickness=2, circle_radius=2
-            ),
-        )
-        # Draw right hand connections
-        mp_drawing.draw_landmarks(
-            image,
-            landmark_list=results.right_hand_landmarks,
-            connections=mp_holistic.HAND_CONNECTIONS,
-            landmark_drawing_spec=mp_drawing.DrawingSpec(
-                color=(232, 254, 255), thickness=1, circle_radius=2
-            ),
-            connection_drawing_spec=mp_drawing.DrawingSpec(
-                color=(255, 249, 161), thickness=2, circle_radius=2
-            ),
-        )
+        connections = [
+            (0, 1), (1, 2), (2, 3), (3, 4),
+            (0, 5), (5, 6), (6, 7), (7, 8),
+            (5, 9), (9, 10), (10, 11), (11, 12),
+            (9, 13), (13, 14), (14, 15), (15, 16),
+            (13, 17), (17, 18), (18, 19), (19, 20),
+            (0, 17),
+        ]
+        height, width = image.shape[:2]
+        for landmarks in (results.left_hand_landmarks, results.right_hand_landmarks):
+            if landmarks is None:
+                continue
+            points = [
+                (int(point.x * width), int(point.y * height))
+                for point in landmarks.landmark
+            ]
+            for start, end in connections:
+                cv2.line(image, points[start], points[end], (255, 249, 161), 2)
+            for point in points:
+                cv2.circle(image, point, 3, (232, 254, 255), -1)

@@ -2,12 +2,16 @@ import cv2
 import os
 import numpy as np
 import pickle as pkl
-import mediapipe as mp
-from utils.mediapipe_utils import mediapipe_detection
+from utils.mediapipe_utils import create_hand_landmarker, mediapipe_detection
+
+
+DATASET_FOLDER = os.path.join("data", "dataset_tasks")
 
 
 def landmark_to_array(mp_landmark_list):
     """Return a np array of size (nb_keypoints x 3)"""
+    if mp_landmark_list is None:
+        return np.zeros((21, 3), dtype=float)
     keypoints = []
     for landmark in mp_landmark_list.landmark:
         keypoints.append([landmark.x, landmark.y, landmark.z])
@@ -21,7 +25,9 @@ def extract_landmarks(results):
     :param results: mediapipe object that contains the 3D position of all keypoints
     :return: Two np arrays of size (1, 21 * 3) = (1, nb_keypoints * nb_coordinates) corresponding to both hands
     """
-    pose = landmark_to_array(results.pose_landmarks).reshape(99).tolist()
+    # Pose landmarks were saved by the original project but are not used by its
+    # hand-only sign embedding. Keep a zero-filled pose entry for cache compatibility.
+    pose = np.zeros(99).tolist()
 
     left_hand = np.zeros(63).tolist()
     if results.left_hand_landmarks:
@@ -43,33 +49,40 @@ def save_landmarks_from_video(video_name):
     cap = cv2.VideoCapture(
         os.path.join("data", "videos", sign_name, video_name + ".mp4")
     )
-    with mp.solutions.holistic.Holistic(
-        min_detection_confidence=0.5, min_tracking_confidence=0.5
-    ) as holistic:
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if ret:
-                # Make detections
-                image, results = mediapipe_detection(frame, holistic)
+    if not cap.isOpened():
+        raise RuntimeError(f"Could not open reference video: {video_name}")
 
-                # Store results
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    if not np.isfinite(fps) or fps <= 0:
+        fps = 30.0
+
+    try:
+        with create_hand_landmarker() as hand_landmarker:
+            frame_index = 0
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                timestamp_ms = int(frame_index * 1000 / fps)
+                _, results = mediapipe_detection(
+                    frame, hand_landmarker, timestamp_ms
+                )
                 pose, left_hand, right_hand = extract_landmarks(results)
                 landmark_list["pose"].append(pose)
                 landmark_list["left_hand"].append(left_hand)
                 landmark_list["right_hand"].append(right_hand)
-            else:
-                break
+                frame_index += 1
+    finally:
         cap.release()
 
     # Create the folder of the sign if it doesn't exists
-    path = os.path.join("data", "dataset", sign_name)
-    if not os.path.exists(path):
-        os.mkdir(path)
+    path = os.path.join(DATASET_FOLDER, sign_name)
+    os.makedirs(path, exist_ok=True)
 
     # Create the folder of the video data if it doesn't exists
     data_path = os.path.join(path, video_name)
-    if not os.path.exists(data_path):
-        os.mkdir(data_path)
+    os.makedirs(data_path, exist_ok=True)
 
     # Saving the landmark_list in the correct folder
     save_array(

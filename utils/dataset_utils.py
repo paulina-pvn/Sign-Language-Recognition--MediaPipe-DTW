@@ -7,6 +7,9 @@ from models.sign_model import SignModel
 from utils.landmark_utils import save_landmarks_from_video, load_array
 
 
+DATASET_FOLDER = os.path.join("data", "dataset_tasks")
+
+
 def load_dataset():
     videos = [
         file_name.replace(".mp4", "")
@@ -16,7 +19,7 @@ def load_dataset():
     ]
     dataset = [
         file_name.replace(".pickle", "").replace("pose_", "")
-        for root, dirs, files in os.walk(os.path.join("data", "dataset"))
+        for root, dirs, files in os.walk(DATASET_FOLDER)
         for file_name in files
         if file_name.endswith(".pickle") and file_name.startswith("pose_")
     ]
@@ -37,7 +40,7 @@ def load_reference_signs(videos):
     reference_signs = {"name": [], "sign_model": [], "distance": []}
     for video_name in videos:
         sign_name = video_name.split("-")[0]
-        path = os.path.join("data", "dataset", sign_name, video_name)
+        path = os.path.join(DATASET_FOLDER, sign_name, video_name)
 
         left_hand_list = load_array(os.path.join(path, f"lh_{video_name}.pickle"))
         right_hand_list = load_array(os.path.join(path, f"rh_{video_name}.pickle"))

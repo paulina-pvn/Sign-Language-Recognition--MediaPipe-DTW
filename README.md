@@ -1,90 +1,79 @@
-# Sign Language Recognition - using MediaPipe and DTW
+# Sign Language Recognition with MediaPipe and DTW
 
-![License: MIT](https://img.shields.io/badge/license-MIT-green)
+This project recognizes signs by finding hand landmarks with MediaPipe and comparing hand movement over time with Dynamic Time Warping (DTW). The webcam view shows the detected hand points and the closest matching sign.
 
-This repository proposes an implementation of a Sign Recognition Model using the **MediaPipe** library 
-for landmark extraction and **Dynamic Time Warping** (DTW) as a similarity metric between signs.
+## Requirements
 
-![](example.gif)
+- macOS on Apple Silicon, with Python 3.14 already installed
+- A webcam
+- Internet access for the one-time MediaPipe model download
 
-#### Source : https://www.sicara.ai/blog/sign-language-recognition-using-mediapipe
-___
+The application uses MediaPipe Tasks, which requires a separate hand-landmarker model file. The model file is not included in this repository.
 
 ## Set up
 
-### 1. Open terminal and go to the Project directory
+Open Terminal and go to this project folder (the folder containing `main.py`). Create an isolated environment with your existing Python 3.14 and install the project packages:
 
-### 2. Install the necessary libraries
-
-- ` pip install -r requirements.txt `
-
-### 3. Import Videos of signs which will be considered as reference
-The architecture of the `videos/` folder must be:
-```
-|data/
-    |-videos/
-          |-Hello/
-            |-<video_of_hello_1>.mp4
-            |-<video_of_hello_2>.mp4
-            ...
-          |-Thanks/
-            |-<video_of_thanks_1>.mp4
-            |-<video_of_thanks_2>.mp4
-            ...
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-To automatically create a small dataset of French signs:
+Download the MediaPipe hand-landmarker model into the `models` folder:
 
-- Install `ffmpeg` (for MacOS `brew install ffmpeg`)
-- Run: ` python yt_download.py `
-- Add more YouTube links in ``yt_links.csv`` if needed
-> N.B. The current dataset is insufficient to obtain good results. Feel free to add more links or import your own videos 
+```bash
+curl -L "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task" -o models/hand_landmarker.task
+```
 
-### 4. Load the dataset and turn on the Webcam
+## Add reference signs
 
-- ` python main.py `
+Put videos in a folder named for each sign. The video filename must start with the same sign name and a hyphen; the part before the first hyphen is used as the label.
 
-### 5. Press the "r" key to record the sign. 
+```text
+data/
+└── videos/
+    ├── Bonjour/
+    │   ├── Bonjour-video1.mp4
+    │   └── Bonjour-video2.mp4
+    └── Merci/
+        └── Merci-video1.mp4
+```
 
-___
-## Code Description
+You can use your own videos. The optional `yt_download.py` script can also download clips listed in `yt_links.csv`; it requires `ffmpeg` (`brew install ffmpeg`).
 
-### *Landmark extraction (MediaPipe)*
+## Run
 
-- The **Holistic Model** of MediaPipe allows us to extract the keypoints of the Hands, Pose and Face models.
-For now, the implementation only uses the Hand model to predict the sign.
+From the project folder, with `.venv` activated, run:
 
+```bash
+python main.py
+```
 
-### *Hand Model*
+The first run extracts hand landmarks from each reference video and stores them in `data/dataset_tasks/`. This separate cache keeps new MediaPipe Tasks landmarks apart from any dataset created by the older version.
 
-- In this project a **HandModel** has been created to define the Hand gesture at each frame. 
-If a hand is not present we set all the positions to zero.
+When the webcam window appears:
 
-- In order to be **invariant to orientation and scale**, the **feature vector** of the
-HandModel is a **list of the angles** between all the connexions of the hand.
+- Press **r** to record a 50-frame sample and compare it with the reference signs.
+- Press **q** to quit.
 
-### *Sign Model*
+If macOS asks for camera access, allow it for the Terminal application you are using.
 
-- The **SignModel** is created from a list of landmarks (extracted from a video)
+To run it again later:
 
-- For each frame, we **store** the **feature vectors** of each hand.
+```bash
+cd Sign-Language-Recognition--MediaPipe-DTW
+source .venv/bin/activate
+python main.py
+```
 
-### *Sign Recorder*
+## How recognition works
 
-- The **SignRecorder** class **stores** the HandModels of left hand and right hand for each frame **when recording**.
-- Once the recording is finished, it **computes the DTW** of the recorded sign and 
-all the reference signs present in the dataset.
-- Finally, a voting logic is added to output a result only if the prediction **confidence** is **higher than a threshold**.
+MediaPipe finds up to two hands in each frame. The project turns each hand into a set of angles between hand connections, which makes the features less sensitive to hand size and orientation. DTW compares those angle sequences over time, allowing the same sign to take a little more or less time. The app ranks reference videos by distance and uses a vote among the closest matches to decide what to display.
 
-### *Dynamic Time Warping*
+To teach the app a new sign, add one or more reference videos using the folder and filename pattern above. The **r** key records an example to recognize; it does not add a reference sign.
 
--  DTW is widely used for computing time series similarity.
+## Reference
 
-- In this project, we compute the DTW of the variation of hand connexion angles over time.
-
-___
-
-## References
-
- - [Pham Chinh Huu, Le Quoc Khanh, Le Thanh Ha : Human Action Recognition Using Dynamic Time Warping and Voting Algorithm](https://www.researchgate.net/publication/290440452)
- - [Mediapipe : Pose classification](https://google.github.io/mediapipe/solutions/pose_classification.html)
+The original approach was inspired by [Sign Language Recognition using MediaPipe](https://www.sicara.ai/blog/sign-language-recognition-using-mediapipe-dtw).

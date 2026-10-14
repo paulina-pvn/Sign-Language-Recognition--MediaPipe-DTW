@@ -23,7 +23,9 @@ class SignRecorder(object):
         """
         Initialize sign_distances & start recording
         """
-        self.reference_signs["distance"].values[:] = 0
+        # pandas 3 may expose the column's NumPy values as read-only.
+        # Assign a new column instead of mutating that array view.
+        self.reference_signs["distance"] = 0.0
         self.is_recording = True
 
     def process_results(self, results) -> (str, bool):

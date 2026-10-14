@@ -1,7 +1,22 @@
 import pandas as pd
-from fastdtw import fastdtw
 import numpy as np
 from models.sign_model import SignModel
+
+
+def _dtw_distance(sequence_a, sequence_b):
+    """Exact DTW using linear memory and Euclidean frame-to-frame distance."""
+    if len(sequence_a) == 0 or len(sequence_b) == 0:
+        return np.inf
+
+    previous = np.full(len(sequence_b) + 1, np.inf)
+    previous[0] = 0.0
+    for frame_a in sequence_a:
+        current = np.full(len(sequence_b) + 1, np.inf)
+        for j, frame_b in enumerate(sequence_b, start=1):
+            cost = np.linalg.norm(np.asarray(frame_a) - np.asarray(frame_b))
+            current[j] = cost + min(current[j - 1], previous[j], previous[j - 1])
+        previous = current
+    return float(previous[-1])
 
 
 def dtw_distances(recorded_sign: SignModel, reference_signs: pd.DataFrame):
@@ -20,22 +35,23 @@ def dtw_distances(recorded_sign: SignModel, reference_signs: pd.DataFrame):
     rec_right_hand = recorded_sign.rh_embedding
 
     for idx, row in reference_signs.iterrows():
-        # Initialize the row variables
-        ref_sign_name, ref_sign_model, _ = row
+        ref_sign_model = row["sign_model"]
 
-        # If the reference sign has the same number of hands compute fastdtw
+        # Compare only references that use the same hand or hands.
+        distance = 0.0
         if (recorded_sign.has_left_hand == ref_sign_model.has_left_hand) and (
             recorded_sign.has_right_hand == ref_sign_model.has_right_hand
-        ):
+        ) and (recorded_sign.has_left_hand or recorded_sign.has_right_hand):
             ref_left_hand = ref_sign_model.lh_embedding
             ref_right_hand = ref_sign_model.rh_embedding
 
             if recorded_sign.has_left_hand:
-                row["distance"] += list(fastdtw(rec_left_hand, ref_left_hand))[0]
+                distance += _dtw_distance(rec_left_hand, ref_left_hand)
             if recorded_sign.has_right_hand:
-                row["distance"] += list(fastdtw(rec_right_hand, ref_right_hand))[0]
+                distance += _dtw_distance(rec_right_hand, ref_right_hand)
 
         # If not, distance equals infinity
         else:
-            row["distance"] = np.inf
+            distance = np.inf
+        reference_signs.at[idx, "distance"] = distance
     return reference_signs.sort_values(by=["distance"])
