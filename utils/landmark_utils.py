@@ -2,10 +2,12 @@ import cv2
 import os
 import numpy as np
 import pickle as pkl
+from pathlib import Path
 from utils.mediapipe_utils import create_hand_landmarker, mediapipe_detection
 
 
 DATASET_FOLDER = os.path.join("data", "dataset_tasks")
+VIDEO_EXTENSIONS = {".mp4", ".webm"}
 
 
 def landmark_to_array(mp_landmark_list):
@@ -43,14 +45,30 @@ def extract_landmarks(results):
 
 def save_landmarks_from_video(video_name):
     landmark_list = {"pose": [], "left_hand": [], "right_hand": []}
-    sign_name = video_name.split("-")[0]
+    video_stem = Path(video_name).stem
+    sign_name = video_stem.split("-")[0]
+    video_folder = os.path.join("data", "videos", sign_name)
+    video_path = next(
+        (
+            os.path.join(video_folder, file_name)
+            for file_name in os.listdir(video_folder)
+            if Path(file_name).stem == video_stem
+            and Path(file_name).suffix.lower() in VIDEO_EXTENSIONS
+        ),
+        None,
+    )
+    if video_path is None:
+        raise FileNotFoundError(
+            f"Could not find an MP4 or WebM reference video for: {video_name}"
+        )
 
     # Set the Video stream
-    cap = cv2.VideoCapture(
-        os.path.join("data", "videos", sign_name, video_name + ".mp4")
-    )
+    cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        raise RuntimeError(f"Could not open reference video: {video_name}")
+        raise RuntimeError(
+            f"Could not decode reference video: {video_path}. "
+            "Check that this OpenCV build supports its video codec."
+        )
 
     fps = cap.get(cv2.CAP_PROP_FPS)
     if not np.isfinite(fps) or fps <= 0:

@@ -29,19 +29,21 @@ curl -L "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_la
 
 ## Add reference signs
 
-Put videos in a folder named for each sign. The video filename must start with the same sign name and a hyphen; the part before the first hyphen is used as the label.
+Put videos in a folder named for each sign. The video filename must start with the same sign name and a hyphen; the part before the first hyphen is used as the label. Both `.mp4` and `.webm` files are detected.
 
 ```text
 data/
 └── videos/
     ├── Bonjour/
     │   ├── Bonjour-video1.mp4
-    │   └── Bonjour-video2.mp4
+    │   └── Bonjour-video2.webm
     └── Merci/
         └── Merci-video1.mp4
 ```
 
-You can use your own videos. The optional `yt_download.py` script can also download clips listed in `yt_links.csv`; it requires `ffmpeg` (`brew install ffmpeg`).
+You can use your own videos. WebM playback depends on whether the OpenCV video backend installed on your machine can decode the video's codec. OpenCV can use different video backends, and their supported formats vary. If a WebM cannot be opened, convert it to MP4 with `ffmpeg` or install an OpenCV build with a compatible FFmpeg/GStreamer backend. The optional `yt_download.py` script downloads clips listed in `yt_links.csv` as MP4; it requires `ffmpeg` (`brew install ffmpeg`).
+
+This folder layout expects one isolated sign example per video. A dataset video that contains a whole lesson or several signs must first be split into short clips and labeled, using its annotation timestamps where available.
 
 ## Run
 
