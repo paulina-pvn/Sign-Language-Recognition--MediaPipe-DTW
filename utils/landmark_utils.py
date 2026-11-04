@@ -45,9 +45,9 @@ def extract_landmarks(results):
 
 def save_landmarks_from_video(video_name):
     landmark_list = {"pose": [], "left_hand": [], "right_hand": []}
-    video_stem = Path(video_name).stem
-    sign_name = video_stem.split("-")[0]
-    video_folder = os.path.join("data", "videos", sign_name)
+    video_relative = Path(video_name)
+    video_stem = video_relative.name
+    video_folder = os.path.join("data", "videos", str(video_relative.parent))
     video_path = next(
         (
             os.path.join(video_folder, file_name)
@@ -94,23 +94,19 @@ def save_landmarks_from_video(video_name):
     finally:
         cap.release()
 
-    # Create the folder of the sign if it doesn't exists
-    path = os.path.join(DATASET_FOLDER, sign_name)
-    os.makedirs(path, exist_ok=True)
-
-    # Create the folder of the video data if it doesn't exists
-    data_path = os.path.join(path, video_name)
+    # Keep each video's landmarks under its label and relative video path.
+    data_path = os.path.join(DATASET_FOLDER, video_name)
     os.makedirs(data_path, exist_ok=True)
 
     # Saving the landmark_list in the correct folder
     save_array(
-        landmark_list["pose"], os.path.join(data_path, f"pose_{video_name}.pickle")
+        landmark_list["pose"], os.path.join(data_path, f"pose_{video_stem}.pickle")
     )
     save_array(
-        landmark_list["left_hand"], os.path.join(data_path, f"lh_{video_name}.pickle")
+        landmark_list["left_hand"], os.path.join(data_path, f"lh_{video_stem}.pickle")
     )
     save_array(
-        landmark_list["right_hand"], os.path.join(data_path, f"rh_{video_name}.pickle")
+        landmark_list["right_hand"], os.path.join(data_path, f"rh_{video_stem}.pickle")
     )
 
 

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pandas as pd
 from tqdm import tqdm
@@ -12,14 +13,14 @@ VIDEO_EXTENSIONS = (".mp4", ".webm")
 
 
 def load_dataset():
-    videos = sorted({
-        os.path.splitext(file_name)[0]
-        for root, dirs, files in os.walk(os.path.join("data", "videos"))
-        for file_name in files
-        if os.path.splitext(file_name)[1].lower() in VIDEO_EXTENSIONS
-    })
+    video_root = Path("data/videos")
+    videos = sorted(
+        str(path.relative_to(video_root).with_suffix(""))
+        for path in video_root.rglob("*")
+        if path.is_file() and path.suffix.lower() in VIDEO_EXTENSIONS
+    )
     dataset = [
-        file_name.replace(".pickle", "").replace("pose_", "")
+        os.path.relpath(root, DATASET_FOLDER)
         for root, dirs, files in os.walk(DATASET_FOLDER)
         for file_name in files
         if file_name.endswith(".pickle") and file_name.startswith("pose_")
@@ -40,11 +41,12 @@ def load_dataset():
 def load_reference_signs(videos):
     reference_signs = {"name": [], "sign_model": [], "distance": []}
     for video_name in videos:
-        sign_name = os.path.splitext(video_name)[0].split("-")[0]
-        path = os.path.join(DATASET_FOLDER, sign_name, video_name)
+        sign_name = Path(video_name).parent.name
+        path = os.path.join(DATASET_FOLDER, video_name)
+        cache_name = Path(video_name).name
 
-        left_hand_list = load_array(os.path.join(path, f"lh_{video_name}.pickle"))
-        right_hand_list = load_array(os.path.join(path, f"rh_{video_name}.pickle"))
+        left_hand_list = load_array(os.path.join(path, f"lh_{cache_name}.pickle"))
+        right_hand_list = load_array(os.path.join(path, f"rh_{cache_name}.pickle"))
 
         reference_signs["name"].append(sign_name)
         reference_signs["sign_model"].append(SignModel(left_hand_list, right_hand_list))

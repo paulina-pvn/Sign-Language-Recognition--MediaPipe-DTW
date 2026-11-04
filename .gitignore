@@ -5,5 +5,8 @@ __pycache__
 data/dataset/*
 !data/dataset/.gitkeep
 
+data/dataset_tasks/*
+!data/dataset_tasks/.gitkeep
+
 data/videos/*
 !data/videos/.gitkeep
