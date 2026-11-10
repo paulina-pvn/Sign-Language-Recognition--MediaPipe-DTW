@@ -53,7 +53,7 @@ After downloading `Langue-des-signes-francaise/LSF_data` to `~/Datasets/LSF_data
 python import_lsf_dataset.py
 ```
 
-The script reads the French sign label from each video filename, uses that label as its folder, and copies the videos into `data/videos/`. The downloaded copy remains outside the repository, and `data/videos/` is ignored by Git. To use another download location, pass its `videos` folder:
+The script reads the French sign label from each video filename, uses that label as its folder, and copies only the selected starter vocabulary into `data/videos/`. The current vocabulary is: Bonjour, merci, de rien, s'il vous plait, au revoir, oui, non, ça va, pardon, comprendre, pas compris, je ne sais pas, je veux, manger, boire, eau, famille, ami·e, où, and comment. It cleans the dataset's trailing underscore from `où _` and `comment _`. The downloaded copy remains outside the repository, and `data/videos/` is ignored by Git. To use another download location, pass its `videos` folder:
 
 ```bash
 python import_lsf_dataset.py /path/to/LSF_data/videos

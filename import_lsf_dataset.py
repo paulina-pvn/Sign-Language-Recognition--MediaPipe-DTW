@@ -7,6 +7,29 @@ from pathlib import Path
 
 
 VIDEO_EXTENSIONS = {".mp4", ".webm"}
+LABEL_RENAMES = {"où _": "où", "comment _": "comment"}
+SELECTED_LABELS = {
+    "Bonjour",
+    "merci",
+    "de rien",
+    "s'il vous plait",
+    "au revoir",
+    "oui",
+    "non",
+    "ça va",
+    "pardon",
+    "comprendre",
+    "pas compris",
+    "je ne sais pas",
+    "je veux",
+    "manger",
+    "boire",
+    "eau",
+    "famille",
+    "ami·e",
+    "où",
+    "comment",
+}
 
 
 def main():
@@ -35,7 +58,11 @@ def main():
     for video in videos:
         # In this dataset, each filename is the French sign label; its parent
         # directory (for example "jauvert") identifies the video source.
-        label = video.stem.strip()
+        source_label = video.stem.strip()
+        label = LABEL_RENAMES.get(source_label, source_label)
+        if label not in SELECTED_LABELS:
+            skipped += 1
+            continue
         if not label or label in {".", ".."}:
             skipped += 1
             continue
