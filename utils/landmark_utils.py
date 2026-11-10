@@ -7,7 +7,7 @@ from utils.mediapipe_utils import create_hand_landmarker, mediapipe_detection
 
 
 DATASET_FOLDER = os.path.join("data", "dataset_tasks")
-VIDEO_EXTENSIONS = {".mp4", ".webm"}
+VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov"}
 
 
 def landmark_to_array(mp_landmark_list):

@@ -9,7 +9,7 @@ from utils.landmark_utils import save_landmarks_from_video, load_array
 
 
 DATASET_FOLDER = os.path.join("data", "dataset_tasks")
-VIDEO_EXTENSIONS = (".mp4", ".webm")
+VIDEO_EXTENSIONS = (".mp4", ".webm", ".mov")
 
 
 def load_dataset():

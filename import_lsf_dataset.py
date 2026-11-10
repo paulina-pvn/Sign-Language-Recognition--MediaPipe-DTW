@@ -3,33 +3,52 @@
 import argparse
 import hashlib
 import shutil
+import unicodedata
 from pathlib import Path
 
 
-VIDEO_EXTENSIONS = {".mp4", ".webm"}
-LABEL_RENAMES = {"où _": "où", "comment _": "comment"}
-SELECTED_LABELS = {
-    "Bonjour",
-    "merci",
-    "de rien",
-    "s'il vous plait",
-    "au revoir",
-    "oui",
-    "non",
-    "ça va",
-    "pardon",
-    "comprendre",
-    "pas compris",
-    "je ne sais pas",
-    "je veux",
-    "manger",
-    "boire",
-    "eau",
-    "famille",
-    "ami·e",
-    "où",
-    "comment",
+VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov"}
+
+
+def normalize_label(label):
+    return unicodedata.normalize("NFC", label).strip().casefold()
+
+
+# Map dataset filenames to clean, consistent folder labels. The source uses
+# trailing underscores for question words and inconsistent capitalization.
+LABELS = {
+    "bonjour": "Bonjour",
+    "merci": "merci",
+    "de rien": "de rien",
+    "s'il vous plait": "s'il vous plait",
+    "au revoir": "au revoir",
+    "oui": "oui",
+    "non": "non",
+    "ça va": "ça va",
+    "pardon": "pardon",
+    "comprendre": "comprendre",
+    "pas compris": "pas compris",
+    "je ne sais pas": "je ne sais pas",
+    "je veux": "je veux",
+    "manger": "manger",
+    "boire": "boire",
+    "eau": "eau",
+    "famille": "famille",
+    "ami·e": "ami·e",
+    "soleil": "soleil",
+    "où _": "où",
+    "où": "où",
+    "comment _": "comment",
+    "comment": "comment",
+    "quand _": "quand",
+    "quand": "quand",
+    "qui _": "qui",
+    "qui": "qui",
+    "quoi _": "quoi",
+    "quoi": "quoi",
+    "désolé": "désolé",
 }
+LABELS = {normalize_label(source): target for source, target in LABELS.items()}
 
 
 def main():
@@ -58,9 +77,8 @@ def main():
     for video in videos:
         # In this dataset, each filename is the French sign label; its parent
         # directory (for example "jauvert") identifies the video source.
-        source_label = video.stem.strip()
-        label = LABEL_RENAMES.get(source_label, source_label)
-        if label not in SELECTED_LABELS:
+        label = LABELS.get(normalize_label(video.stem))
+        if label is None:
             skipped += 1
             continue
         if not label or label in {".", ".."}:

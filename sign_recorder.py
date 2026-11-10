@@ -68,25 +68,28 @@ class SignRecorder(object):
         self.recorded_results = []
         self.is_recording = False
 
-    def _get_sign_predicted(self, batch_size=1, threshold=0.5):
+    def _get_sign_predicted(self, batch_size=1, threshold=0.2):
         """
-        Method that outputs the sign that appears the most in the list of closest
-        reference signs, only if its proportion within the batch is greater than the threshold
+        Vote among the closest reference videos and return a sign only when its
+        share of the vote reaches the threshold.
 
-        :param batch_size: Size of the batch of reference signs that will be compared to the recorded sign
-        :param threshold: If the proportion of the most represented sign in the batch is greater than threshold,
-                        we output the sign_name
-                          If not,
-                        we output "Sign not found"
+        :param batch_size: Number of closest reference videos to include in the vote.
+        :param threshold: Minimum share of votes required to return a sign label.
         :return: The name of the predicted sign
         """
-        # Get the list (of size batch_size) of the most similar reference signs
-        sign_names = self.reference_signs.iloc[:batch_size]["name"].values
+        if batch_size <= 0 or self.reference_signs.empty:
+            return "Signe inconnu"
+
+        # There may be fewer reference videos than the requested batch size.
+        effective_batch_size = min(batch_size, len(self.reference_signs))
+
+        # Get the names attached to the closest reference videos.
+        sign_names = self.reference_signs.iloc[:effective_batch_size]["name"].values
 
         # Count the occurrences of each sign and sort them by descending order
         sign_counter = Counter(sign_names).most_common()
 
         predicted_sign, count = sign_counter[0]
-        if count / batch_size < threshold:
+        if count / effective_batch_size < threshold:
             return "Signe inconnu"
         return predicted_sign

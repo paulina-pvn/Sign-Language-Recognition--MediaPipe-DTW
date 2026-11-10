@@ -29,7 +29,7 @@ curl -L "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_la
 
 ## Add reference signs
 
-Put videos in a folder named for each sign. The folder name is used as the label, and videos may have any filename. Both `.mp4` and `.webm` files are detected.
+Put videos in a folder named for each sign. The folder name is used as the label, and videos may have any filename. `.mp4`, `.webm`, and `.mov` files are detected; OpenCV still needs a backend that can decode the video's codec.
 
 ```text
 data/
@@ -53,7 +53,7 @@ After downloading `Langue-des-signes-francaise/LSF_data` to `~/Datasets/LSF_data
 python import_lsf_dataset.py
 ```
 
-The script reads the French sign label from each video filename, uses that label as its folder, and copies only the selected starter vocabulary into `data/videos/`. The current vocabulary is: Bonjour, merci, de rien, s'il vous plait, au revoir, oui, non, ça va, pardon, comprendre, pas compris, je ne sais pas, je veux, manger, boire, eau, famille, ami·e, où, and comment. It cleans the dataset's trailing underscore from `où _` and `comment _`. The downloaded copy remains outside the repository, and `data/videos/` is ignored by Git. To use another download location, pass its `videos` folder:
+The script reads the French sign label from each video filename, uses that label as its folder, and copies only the selected vocabulary into `data/videos/`: Bonjour, merci, de rien, s'il vous plait, au revoir, oui, non, ça va, pardon, comprendre, pas compris, je ne sais pas, je veux, manger, boire, eau, famille, ami·e, soleil, où, comment, désolé, quand, qui, and quoi. It cleans the dataset's trailing underscore from question labels. The downloaded copy remains outside the repository, and `data/videos/` is ignored by Git. To use another download location, pass its `videos` folder:
 
 ```bash
 python import_lsf_dataset.py /path/to/LSF_data/videos
@@ -88,7 +88,7 @@ python main.py
 
 ## How recognition works
 
-MediaPipe finds up to two hands in each frame. The project turns each hand into a set of angles between hand connections, which makes the features less sensitive to hand size and orientation. DTW compares those angle sequences over time, allowing the same sign to take a little more or less time. The app ranks reference videos by distance and uses a vote among the closest matches to decide what to display.
+MediaPipe finds up to two hands in each frame. The project turns each hand into a set of angles between hand connections, which makes the features less sensitive to hand size and orientation. DTW compares those angle sequences over time, allowing the same sign to take a little more or less time. The app ranks reference videos by distance and votes among the five closest clips. It returns a label when at least 40% of those votes agree (normally two of five); otherwise it shows “Signe inconnu.” These starting settings should be tuned against separate test recordings as more references are added.
 
 To teach the app a new sign, add one or more reference videos using the folder and filename pattern above. The **r** key records an example to recognize; it does not add a reference sign.
 
